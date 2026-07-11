@@ -11,6 +11,7 @@ use NetCode\Access\Domain\RoleAssignment;
 use NetCode\Access\Domain\ValueObjects\RoleId;
 use NetCode\Access\Domain\ValueObjects\ScopeId;
 use NetCode\Access\Domain\ValueObjects\SubjectId;
+use NetCode\Access\Tests\Support\Ids;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
@@ -20,7 +21,7 @@ final class RoleAssignmentTest extends TestCase
     {
         return RoleAssignment::grant(
             roleId: RoleId::random(),
-            subjectId: new SubjectId('subject-1'),
+            subjectId: new SubjectId(Ids::SUBJECT),
             scopeId: $scopeId,
             now: new DateTimeImmutable,
         );
@@ -29,12 +30,12 @@ final class RoleAssignmentTest extends TestCase
     #[Test]
     public function granting_records_the_event(): void
     {
-        $assignment = $this->grant(new ScopeId('store-a'));
+        $assignment = $this->grant(new ScopeId(Ids::STORE_A));
 
         $events = $assignment->releaseEvents();
         $this->assertCount(1, $events);
         $this->assertInstanceOf(RoleAssigned::class, $events[0]);
-        $this->assertSame('store-a', $events[0]->scopeId?->value());
+        $this->assertSame(Ids::STORE_A, $events[0]->scopeId?->value());
     }
 
     #[Test]
@@ -58,18 +59,18 @@ final class RoleAssignmentTest extends TestCase
 
         $this->assertTrue($assignment->isGlobal());
         $this->assertTrue($assignment->grantsIn(null));
-        $this->assertTrue($assignment->grantsIn(new ScopeId('store-a')));
-        $this->assertTrue($assignment->grantsIn(new ScopeId('store-b')));
+        $this->assertTrue($assignment->grantsIn(new ScopeId(Ids::STORE_A)));
+        $this->assertTrue($assignment->grantsIn(new ScopeId(Ids::STORE_B)));
     }
 
     #[Test]
     public function a_scoped_grant_applies_only_in_its_own_scope(): void
     {
-        $assignment = $this->grant(new ScopeId('store-a'));
+        $assignment = $this->grant(new ScopeId(Ids::STORE_A));
 
         $this->assertFalse($assignment->isGlobal());
-        $this->assertTrue($assignment->grantsIn(new ScopeId('store-a')));
-        $this->assertFalse($assignment->grantsIn(new ScopeId('store-b')));
+        $this->assertTrue($assignment->grantsIn(new ScopeId(Ids::STORE_A)));
+        $this->assertFalse($assignment->grantsIn(new ScopeId(Ids::STORE_B)));
         $this->assertFalse($assignment->grantsIn(null));
     }
 }

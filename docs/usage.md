@@ -32,6 +32,9 @@ enum Permission: string
 Every public API accepts `string|BackedEnum` and normalises to a string, so the host stays typed
 while the package stays generic.
 
+Subject and scope ids are **UUIDs** (stored as native Postgres `uuid`), passed across the ports as
+plain strings — the package never learns what a subject *is*, only that it is identified by a UUID.
+
 ## Config (`config/access.php`)
 
 | Key | Default | Purpose |
@@ -108,7 +111,7 @@ No subject → **401**. Subject without the permission (in the current scope) �
 
 ## Scopes (multi-tenancy)
 
-A scope is an **opaque id** — the host maps its tenant onto it. `null` = global.
+A scope is an **opaque UUID** — the host maps its tenant id onto it. `null` = global.
 
 - a role assigned at `scope = null` grants in **every** scope (platform admin);
 - a role assigned at `scope = <tenant>` grants **only** when checking that scope;

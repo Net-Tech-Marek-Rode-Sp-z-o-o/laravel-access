@@ -11,6 +11,7 @@ use NetCode\Access\Application\Port\CurrentSubject;
 use NetCode\Access\Application\Port\RoleAssignments;
 use NetCode\Access\Application\Port\RoleCatalog;
 use NetCode\Access\Application\Port\ScopeContext;
+use NetCode\Access\Tests\Support\Ids;
 use NetCode\Access\Tests\Support\Permission;
 use NetCode\Access\Tests\Support\Role;
 use NetCode\Access\Tests\TestCase;
@@ -96,9 +97,9 @@ final class RequirePermissionTest extends TestCase
     #[Test]
     public function a_subject_holding_the_permission_is_allowed_through(): void
     {
-        $this->subjectId = 'user-1';
-        $this->scopeId = 'store-a';
-        $this->grantManagerTo('user-1', 'store-a');
+        $this->subjectId = Ids::SUBJECT;
+        $this->scopeId = Ids::STORE_A;
+        $this->grantManagerTo(Ids::SUBJECT, Ids::STORE_A);
 
         $this->getJson('/invoices')->assertOk()->assertJsonPath('ok', true);
     }
@@ -106,8 +107,8 @@ final class RequirePermissionTest extends TestCase
     #[Test]
     public function a_subject_without_the_permission_is_forbidden(): void
     {
-        $this->subjectId = 'user-1';
-        $this->scopeId = 'store-a';
+        $this->subjectId = Ids::SUBJECT;
+        $this->scopeId = Ids::STORE_A;
 
         $this->getJson('/invoices')->assertForbidden();
     }
@@ -115,13 +116,13 @@ final class RequirePermissionTest extends TestCase
     #[Test]
     public function a_scoped_permission_does_not_leak_into_another_scope(): void
     {
-        $this->subjectId = 'user-1';
-        $this->grantManagerTo('user-1', 'store-a');
+        $this->subjectId = Ids::SUBJECT;
+        $this->grantManagerTo(Ids::SUBJECT, Ids::STORE_A);
 
-        $this->scopeId = 'store-b';
+        $this->scopeId = Ids::STORE_B;
         $this->getJson('/invoices')->assertForbidden();
 
-        $this->scopeId = 'store-a';
+        $this->scopeId = Ids::STORE_A;
         $this->getJson('/invoices')->assertOk();
     }
 

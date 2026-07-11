@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use NetCode\Access\Application\Port\Authorizer;
 use NetCode\Access\Application\Port\RoleAssignments;
 use NetCode\Access\Application\Port\RoleCatalog;
+use NetCode\Access\Tests\Support\Ids;
 use NetCode\Access\Tests\Support\Permission;
 use NetCode\Access\Tests\Support\Role;
 use NetCode\Access\Tests\TestCase;
@@ -18,7 +19,7 @@ final class AuthorizationTest extends TestCase
 {
     use RefreshDatabase;
 
-    private const string SUBJECT = 'user-1';
+    private const string SUBJECT = Ids::SUBJECT;
 
     private Authorizer $authorizer;
 
@@ -54,14 +55,14 @@ final class AuthorizationTest extends TestCase
     public function a_role_grants_its_permissions_and_denies_the_rest(): void
     {
         $this->seedRoles();
-        $this->assignments->assign(subjectId: self::SUBJECT, role: Role::Manager, scopeId: 'store-a');
+        $this->assignments->assign(subjectId: self::SUBJECT, role: Role::Manager, scopeId: Ids::STORE_A);
 
-        $this->assertTrue($this->authorizer->can(self::SUBJECT, Permission::InvoicesIssue, 'store-a'));
-        $this->assertFalse($this->authorizer->can(self::SUBJECT, Permission::UsersInvite, 'store-a'));
-        $this->assertTrue($this->authorizer->hasRole(self::SUBJECT, Role::Manager, 'store-a'));
-        $this->assertFalse($this->authorizer->hasRole(self::SUBJECT, Role::GlobalAdmin, 'store-a'));
-        $this->assertSame(['manager'], $this->authorizer->rolesOf(self::SUBJECT, 'store-a'));
-        $this->assertSame(['invoices.issue'], $this->authorizer->permissionsOf(self::SUBJECT, 'store-a'));
+        $this->assertTrue($this->authorizer->can(self::SUBJECT, Permission::InvoicesIssue, Ids::STORE_A));
+        $this->assertFalse($this->authorizer->can(self::SUBJECT, Permission::UsersInvite, Ids::STORE_A));
+        $this->assertTrue($this->authorizer->hasRole(self::SUBJECT, Role::Manager, Ids::STORE_A));
+        $this->assertFalse($this->authorizer->hasRole(self::SUBJECT, Role::GlobalAdmin, Ids::STORE_A));
+        $this->assertSame(['manager'], $this->authorizer->rolesOf(self::SUBJECT, Ids::STORE_A));
+        $this->assertSame(['invoices.issue'], $this->authorizer->permissionsOf(self::SUBJECT, Ids::STORE_A));
     }
 
     #[Test]
@@ -69,8 +70,8 @@ final class AuthorizationTest extends TestCase
     {
         $this->seedRoles();
 
-        $this->assertFalse($this->authorizer->can(self::SUBJECT, Permission::InvoicesIssue, 'store-a'));
-        $this->assertSame([], $this->authorizer->rolesOf(self::SUBJECT, 'store-a'));
+        $this->assertFalse($this->authorizer->can(self::SUBJECT, Permission::InvoicesIssue, Ids::STORE_A));
+        $this->assertSame([], $this->authorizer->rolesOf(self::SUBJECT, Ids::STORE_A));
         $this->assertSame([], $this->authorizer->permissionsOf(self::SUBJECT));
     }
 
@@ -81,20 +82,20 @@ final class AuthorizationTest extends TestCase
         $this->assignments->assign(subjectId: self::SUBJECT, role: Role::GlobalAdmin);
 
         $this->assertTrue($this->authorizer->can(self::SUBJECT, Permission::UsersInvite));
-        $this->assertTrue($this->authorizer->can(self::SUBJECT, Permission::UsersInvite, 'store-a'));
-        $this->assertTrue($this->authorizer->can(self::SUBJECT, Permission::UsersInvite, 'store-b'));
+        $this->assertTrue($this->authorizer->can(self::SUBJECT, Permission::UsersInvite, Ids::STORE_A));
+        $this->assertTrue($this->authorizer->can(self::SUBJECT, Permission::UsersInvite, Ids::STORE_B));
     }
 
     #[Test]
     public function a_scoped_role_is_isolated_to_its_own_scope(): void
     {
         $this->seedRoles();
-        $this->assignments->assign(subjectId: self::SUBJECT, role: Role::Manager, scopeId: 'store-a');
+        $this->assignments->assign(subjectId: self::SUBJECT, role: Role::Manager, scopeId: Ids::STORE_A);
 
-        $this->assertTrue($this->authorizer->can(self::SUBJECT, Permission::InvoicesIssue, 'store-a'));
-        $this->assertFalse($this->authorizer->can(self::SUBJECT, Permission::InvoicesIssue, 'store-b'));
+        $this->assertTrue($this->authorizer->can(self::SUBJECT, Permission::InvoicesIssue, Ids::STORE_A));
+        $this->assertFalse($this->authorizer->can(self::SUBJECT, Permission::InvoicesIssue, Ids::STORE_B));
         $this->assertFalse($this->authorizer->can(self::SUBJECT, Permission::InvoicesIssue));
-        $this->assertSame([], $this->authorizer->rolesOf(self::SUBJECT, 'store-b'));
+        $this->assertSame([], $this->authorizer->rolesOf(self::SUBJECT, Ids::STORE_B));
     }
 
     #[Test]
@@ -103,13 +104,13 @@ final class AuthorizationTest extends TestCase
         $this->seedRoles();
         $this->catalog->create(name: Role::Customer, label: 'Customer', permissions: []);
 
-        $this->assignments->assign(subjectId: self::SUBJECT, role: Role::Manager, scopeId: 'store-a');
-        $this->assignments->assign(subjectId: self::SUBJECT, role: Role::Customer, scopeId: 'store-b');
+        $this->assignments->assign(subjectId: self::SUBJECT, role: Role::Manager, scopeId: Ids::STORE_A);
+        $this->assignments->assign(subjectId: self::SUBJECT, role: Role::Customer, scopeId: Ids::STORE_B);
 
-        $this->assertSame(['manager'], $this->authorizer->rolesOf(self::SUBJECT, 'store-a'));
-        $this->assertSame(['customer'], $this->authorizer->rolesOf(self::SUBJECT, 'store-b'));
-        $this->assertTrue($this->authorizer->can(self::SUBJECT, Permission::InvoicesIssue, 'store-a'));
-        $this->assertFalse($this->authorizer->can(self::SUBJECT, Permission::InvoicesIssue, 'store-b'));
+        $this->assertSame(['manager'], $this->authorizer->rolesOf(self::SUBJECT, Ids::STORE_A));
+        $this->assertSame(['customer'], $this->authorizer->rolesOf(self::SUBJECT, Ids::STORE_B));
+        $this->assertTrue($this->authorizer->can(self::SUBJECT, Permission::InvoicesIssue, Ids::STORE_A));
+        $this->assertFalse($this->authorizer->can(self::SUBJECT, Permission::InvoicesIssue, Ids::STORE_B));
     }
 
     #[Test]
@@ -117,14 +118,14 @@ final class AuthorizationTest extends TestCase
     {
         $this->seedRoles();
 
-        $this->assignments->assign(subjectId: self::SUBJECT, role: Role::Manager, scopeId: 'store-a');
-        $this->assertTrue($this->authorizer->can(self::SUBJECT, Permission::InvoicesIssue, 'store-a'));
+        $this->assignments->assign(subjectId: self::SUBJECT, role: Role::Manager, scopeId: Ids::STORE_A);
+        $this->assertTrue($this->authorizer->can(self::SUBJECT, Permission::InvoicesIssue, Ids::STORE_A));
         $this->assertDatabaseCount('access_role_user', 1);
 
-        $this->assignments->revoke(subjectId: self::SUBJECT, role: Role::Manager, scopeId: 'store-a');
+        $this->assignments->revoke(subjectId: self::SUBJECT, role: Role::Manager, scopeId: Ids::STORE_A);
 
         $this->assertDatabaseCount('access_role_user', 0);
-        $this->assertFalse($this->authorizer->can(self::SUBJECT, Permission::InvoicesIssue, 'store-a'));
+        $this->assertFalse($this->authorizer->can(self::SUBJECT, Permission::InvoicesIssue, Ids::STORE_A));
     }
 
     #[Test]
@@ -135,16 +136,16 @@ final class AuthorizationTest extends TestCase
             label: 'Manager',
             permissions: [Permission::InvoicesIssue],
         );
-        $this->assignments->assign(subjectId: self::SUBJECT, role: Role::Manager, scopeId: 'store-a');
+        $this->assignments->assign(subjectId: self::SUBJECT, role: Role::Manager, scopeId: Ids::STORE_A);
 
-        $this->assertTrue($this->authorizer->can(self::SUBJECT, Permission::InvoicesIssue, 'store-a'));
+        $this->assertTrue($this->authorizer->can(self::SUBJECT, Permission::InvoicesIssue, Ids::STORE_A));
 
         $this->catalog->setPermissions($roleId, [Permission::UsersInvite]);
 
         $this->assertDatabaseHas('access_role_permission', ['role_id' => $roleId, 'permission' => 'users.invite']);
         $this->assertDatabaseMissing('access_role_permission', ['role_id' => $roleId, 'permission' => 'invoices.issue']);
-        $this->assertFalse($this->authorizer->can(self::SUBJECT, Permission::InvoicesIssue, 'store-a'));
-        $this->assertTrue($this->authorizer->can(self::SUBJECT, Permission::UsersInvite, 'store-a'));
+        $this->assertFalse($this->authorizer->can(self::SUBJECT, Permission::InvoicesIssue, Ids::STORE_A));
+        $this->assertTrue($this->authorizer->can(self::SUBJECT, Permission::UsersInvite, Ids::STORE_A));
     }
 
     #[Test]
@@ -155,7 +156,7 @@ final class AuthorizationTest extends TestCase
             label: 'Manager',
             permissions: [Permission::InvoicesIssue],
         );
-        $this->assignments->assign(subjectId: self::SUBJECT, role: Role::Manager, scopeId: 'store-a');
+        $this->assignments->assign(subjectId: self::SUBJECT, role: Role::Manager, scopeId: Ids::STORE_A);
 
         $this->catalog->delete($roleId);
 
@@ -169,18 +170,18 @@ final class AuthorizationTest extends TestCase
     {
         $this->seedRoles();
         $this->assignments->assign(subjectId: self::SUBJECT, role: Role::GlobalAdmin);
-        $this->assignments->assign(subjectId: self::SUBJECT, role: Role::Manager, scopeId: 'store-a');
+        $this->assignments->assign(subjectId: self::SUBJECT, role: Role::Manager, scopeId: Ids::STORE_A);
 
         DB::connection()->enableQueryLog();
         DB::connection()->flushQueryLog();
 
-        $this->assertTrue($this->authorizer->can(self::SUBJECT, Permission::InvoicesIssue, 'store-a'));
-        $this->assertTrue($this->authorizer->can(self::SUBJECT, Permission::UsersInvite, 'store-a'));
-        $this->assertTrue($this->authorizer->hasRole(self::SUBJECT, Role::Manager, 'store-a'));
-        $this->assertSame(['global-admin', 'manager'], $this->authorizer->rolesOf(self::SUBJECT, 'store-a'));
+        $this->assertTrue($this->authorizer->can(self::SUBJECT, Permission::InvoicesIssue, Ids::STORE_A));
+        $this->assertTrue($this->authorizer->can(self::SUBJECT, Permission::UsersInvite, Ids::STORE_A));
+        $this->assertTrue($this->authorizer->hasRole(self::SUBJECT, Role::Manager, Ids::STORE_A));
+        $this->assertSame(['global-admin', 'manager'], $this->authorizer->rolesOf(self::SUBJECT, Ids::STORE_A));
         $this->assertSame(
             ['invoices.issue', 'users.invite', 'users.remove'],
-            $this->authorizer->permissionsOf(self::SUBJECT, 'store-a'),
+            $this->authorizer->permissionsOf(self::SUBJECT, Ids::STORE_A),
         );
 
         $this->assertCount(1, DB::connection()->getQueryLog());

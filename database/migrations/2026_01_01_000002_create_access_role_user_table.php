@@ -6,8 +6,6 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use NetCode\Access\Domain\ValueObjects\ScopeId;
-use NetCode\Access\Domain\ValueObjects\SubjectId;
 use NetCode\Access\Infrastructure\DataAccess\Tables;
 
 return new class extends Migration
@@ -18,8 +16,8 @@ return new class extends Migration
 
         Schema::create($table, function (Blueprint $blueprint): void {
             $blueprint->uuid('role_id');
-            $blueprint->string('user_id', SubjectId::MAX_LENGTH);
-            $blueprint->string('scope_id', ScopeId::MAX_LENGTH)->nullable();
+            $blueprint->uuid('user_id');
+            $blueprint->uuid('scope_id')->nullable();
             $blueprint->timestamp('granted_at');
 
             $blueprint->index(['user_id', 'scope_id']);

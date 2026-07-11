@@ -19,6 +19,7 @@ use NetCode\Access\Domain\ValueObjects\RoleName;
 use NetCode\Access\Domain\ValueObjects\ScopeId;
 use NetCode\Access\Domain\ValueObjects\SubjectId;
 use NetCode\Access\Tests\Support\FixedClock;
+use NetCode\Access\Tests\Support\Ids;
 use NetCode\Access\Tests\Support\InMemoryRoleAssignmentRepository;
 use NetCode\Access\Tests\Support\InMemoryRoleRepository;
 use PHPUnit\Framework\Attributes\Test;
@@ -70,14 +71,14 @@ final class RoleAssignmentHandlersTest extends TestCase
     {
         $this->assign()(new AssignRole(
             role: 'manager',
-            subjectId: 'user-1',
-            scopeId: 'store-a',
+            subjectId: Ids::SUBJECT,
+            scopeId: Ids::STORE_A,
         ));
 
-        $assignment = $this->assignments->find($this->role->id(), new SubjectId('user-1'), new ScopeId('store-a'));
+        $assignment = $this->assignments->find($this->role->id(), new SubjectId(Ids::SUBJECT), new ScopeId(Ids::STORE_A));
 
         $this->assertNotNull($assignment);
-        $this->assertSame('store-a', $assignment->scopeId()?->value());
+        $this->assertSame(Ids::STORE_A, $assignment->scopeId()?->value());
         $this->assertInstanceOf(RoleAssigned::class, $this->assignments->published[0]);
     }
 
@@ -86,10 +87,10 @@ final class RoleAssignmentHandlersTest extends TestCase
     {
         $this->assign()(new AssignRole(
             role: 'manager',
-            subjectId: 'user-1',
+            subjectId: Ids::SUBJECT,
         ));
 
-        $assignment = $this->assignments->find($this->role->id(), new SubjectId('user-1'), null);
+        $assignment = $this->assignments->find($this->role->id(), new SubjectId(Ids::SUBJECT), null);
 
         $this->assertNotNull($assignment);
         $this->assertTrue($assignment->isGlobal());
@@ -100,8 +101,8 @@ final class RoleAssignmentHandlersTest extends TestCase
     {
         $command = new AssignRole(
             role: 'manager',
-            subjectId: 'user-1',
-            scopeId: 'store-a',
+            subjectId: Ids::SUBJECT,
+            scopeId: Ids::STORE_A,
         );
 
         $this->assign()($command);
@@ -118,7 +119,7 @@ final class RoleAssignmentHandlersTest extends TestCase
 
         $this->assign()(new AssignRole(
             role: 'ghost',
-            subjectId: 'user-1',
+            subjectId: Ids::SUBJECT,
         ));
     }
 
@@ -127,31 +128,31 @@ final class RoleAssignmentHandlersTest extends TestCase
     {
         $this->assign()(new AssignRole(
             role: 'manager',
-            subjectId: 'user-1',
-            scopeId: 'store-a',
+            subjectId: Ids::SUBJECT,
+            scopeId: Ids::STORE_A,
         ));
         $this->assignments->published = [];
 
         $this->revoke()(new RevokeRole(
             role: 'manager',
-            subjectId: 'user-1',
-            scopeId: 'store-a',
+            subjectId: Ids::SUBJECT,
+            scopeId: Ids::STORE_A,
         ));
 
-        $this->assertNull($this->assignments->find($this->role->id(), new SubjectId('user-1'), new ScopeId('store-a')));
+        $this->assertNull($this->assignments->find($this->role->id(), new SubjectId(Ids::SUBJECT), new ScopeId(Ids::STORE_A)));
         $this->assertInstanceOf(RoleRevoked::class, $this->assignments->published[0]);
     }
 
     #[Test]
     public function revoking_leaves_assignments_in_other_scopes_untouched(): void
     {
-        $this->assign()(new AssignRole(role: 'manager', subjectId: 'user-1', scopeId: 'store-a'));
-        $this->assign()(new AssignRole(role: 'manager', subjectId: 'user-1', scopeId: 'store-b'));
+        $this->assign()(new AssignRole(role: 'manager', subjectId: Ids::SUBJECT, scopeId: Ids::STORE_A));
+        $this->assign()(new AssignRole(role: 'manager', subjectId: Ids::SUBJECT, scopeId: Ids::STORE_B));
 
-        $this->revoke()(new RevokeRole(role: 'manager', subjectId: 'user-1', scopeId: 'store-a'));
+        $this->revoke()(new RevokeRole(role: 'manager', subjectId: Ids::SUBJECT, scopeId: Ids::STORE_A));
 
-        $this->assertNull($this->assignments->find($this->role->id(), new SubjectId('user-1'), new ScopeId('store-a')));
-        $this->assertNotNull($this->assignments->find($this->role->id(), new SubjectId('user-1'), new ScopeId('store-b')));
+        $this->assertNull($this->assignments->find($this->role->id(), new SubjectId(Ids::SUBJECT), new ScopeId(Ids::STORE_A)));
+        $this->assertNotNull($this->assignments->find($this->role->id(), new SubjectId(Ids::SUBJECT), new ScopeId(Ids::STORE_B)));
     }
 
     #[Test]
@@ -159,7 +160,7 @@ final class RoleAssignmentHandlersTest extends TestCase
     {
         $this->revoke()(new RevokeRole(
             role: 'manager',
-            subjectId: 'user-1',
+            subjectId: Ids::SUBJECT,
         ));
 
         $this->assertSame([], $this->assignments->assignments);

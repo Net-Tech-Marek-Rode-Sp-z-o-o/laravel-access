@@ -9,6 +9,7 @@ use NetCode\Access\Domain\ValueObjects\PermissionSet;
 use NetCode\Access\Domain\ValueObjects\RoleName;
 use NetCode\Access\Domain\ValueObjects\ScopeId;
 use NetCode\Access\Domain\ValueObjects\SubjectId;
+use NetCode\Access\Tests\Support\Ids;
 use NetCode\Access\Tests\Support\Permission;
 use NetCode\Access\Tests\Support\Role;
 use NetCode\Domain\Exception\InvalidArgumentException;
@@ -64,20 +65,38 @@ final class ValueObjectsTest extends TestCase
     }
 
     #[Test]
-    public function subject_and_scope_ids_are_opaque_non_empty_strings(): void
+    public function subject_and_scope_ids_are_uuids(): void
     {
-        $this->assertSame('user-1', new SubjectId(' user-1 ')->value());
-        $this->assertSame('store-a', new ScopeId('store-a')->value());
+        $this->assertSame(Ids::SUBJECT, new SubjectId(Ids::SUBJECT)->value());
+        $this->assertSame(Ids::STORE_A, ScopeId::fromString(Ids::STORE_A)->value());
         $this->assertNull(ScopeId::fromNullable(null));
-        $this->assertSame('store-a', ScopeId::fromNullable('store-a')?->value());
+        $this->assertSame(Ids::STORE_A, ScopeId::fromNullable(Ids::STORE_A)?->value());
+        $this->assertTrue(new SubjectId(Ids::SUBJECT)->equals(new SubjectId(Ids::SUBJECT)));
+        $this->assertFalse(new SubjectId(Ids::SUBJECT)->equals(new SubjectId(Ids::OTHER_SUBJECT)));
+    }
+
+    /** @return list<array{string}> */
+    public static function invalidUuids(): array
+    {
+        return [[''], ['user-1'], ['not-a-uuid'], ['0193f0a0-0000-7000-8000-00000000000']];
     }
 
     #[Test]
-    public function an_empty_subject_id_is_rejected(): void
+    #[DataProvider('invalidUuids')]
+    public function a_subject_id_that_is_not_a_uuid_is_rejected(string $value): void
     {
         $this->expectException(InvalidArgumentException::class);
 
-        new SubjectId('');
+        new SubjectId($value);
+    }
+
+    #[Test]
+    #[DataProvider('invalidUuids')]
+    public function a_scope_id_that_is_not_a_uuid_is_rejected(string $value): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        new ScopeId($value);
     }
 
     #[Test]
