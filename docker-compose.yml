@@ -1,0 +1,29 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: testing
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test -d testing"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  test:
+    build: ./docker
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: testing
+      DB_USERNAME: test
+      DB_PASSWORD: test
+    volumes:
+      - .:/pkg
+    working_dir: /pkg
+    command: sh -c "composer install --no-interaction && composer check"
