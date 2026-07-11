@@ -6,6 +6,8 @@ return [
 
     'middleware_alias' => 'permission',
 
+    'gate' => true,
+
     'table_prefix' => 'access_',
 
 ];

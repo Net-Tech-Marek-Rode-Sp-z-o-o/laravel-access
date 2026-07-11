@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace NetCode\Access\Laravel;
 
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Router;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use NetCode\Access\Application\Port\Authorizer;
 use NetCode\Access\Application\Port\CurrentSubject;
@@ -57,6 +59,7 @@ final class AccessServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(__DIR__.'/../../database/migrations');
 
         $this->registerMiddlewareAlias();
+        $this->registerGate();
         $this->registerCacheInvalidation();
         $this->registerExceptionRendering();
 
@@ -80,6 +83,30 @@ final class AccessServiceProvider extends ServiceProvider
         }
 
         $this->app->make(Router::class)->aliasMiddleware($alias, RequirePermission::class);
+    }
+
+    private function registerGate(): void
+    {
+        if (config('access.gate') !== true) {
+            return;
+        }
+
+        Gate::before(function (Authenticatable $user, string $ability): bool|null {
+            $subjectId = (string) $user->getAuthIdentifier();
+
+            try {
+                $granted = $this->app->make(Authorizer::class)->can(
+                    $subjectId,
+                    $ability,
+                    $this->app->make(ScopeContext::class)->current(),
+                );
+            } catch (InvalidArgumentException) {
+                return null;
+            }
+
+            // null, not false: abstain so Policies still get their say on abilities we do not grant.
+            return $granted ? true : null;
+        });
     }
 
     private function registerCacheInvalidation(): void

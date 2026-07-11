@@ -40,6 +40,7 @@ plain strings — the package never learns what a subject *is*, only that it is 
 | Key | Default | Purpose |
 |---|---|---|
 | `middleware_alias` | `permission` | alias for the `RequirePermission` middleware |
+| `gate` | `true` | register `Gate::before` so `$user->can()` / Policies see the permissions |
 | `table_prefix` | `access_` | prefix of the three tables (applies to migrations and queries) |
 
 ## Ports (hexagonal)
@@ -108,6 +109,26 @@ Route::delete('/users/{id}', RemoveUserController::class)->middleware('permissio
 ```
 
 No subject → **401**. Subject without the permission (in the current scope) → **403**.
+
+## Laravel Gate
+
+With `access.gate = true` (the default) the provider registers a `Gate::before` hook, so the
+framework's own authorization APIs see the permissions:
+
+```php
+$user->can('invoices.issue');                       // true when a role of the user grants it
+$this->authorize('invoices.issue');                 // in a controller
+Route::post('/invoices', …)->can('invoices.issue'); // Laravel's own can: middleware
+@can('invoices.issue') … @endcan                    // Blade
+```
+
+The subject is the authenticated user's `getAuthIdentifier()`; the scope comes from `ScopeContext`.
+The hook returns `true` on a grant and **abstains** (`null`) otherwise — it never returns `false` —
+so your Policies and `Gate::define()` abilities keep deciding everything the package does not grant.
+A non-UUID auth identifier makes it abstain too, so a host with integer user ids is unaffected.
+
+Set `access.gate = false` to keep the Gate untouched and rely on the `permission:` middleware and
+the `Authorizer` port alone.
 
 ## Scopes (multi-tenancy)
 
