@@ -22,12 +22,15 @@ use NetCode\Access\Tests\Support\FixedClock;
 use NetCode\Access\Tests\Support\Ids;
 use NetCode\Access\Tests\Support\InMemoryRoleAssignmentRepository;
 use NetCode\Access\Tests\Support\InMemoryRoleRepository;
+use NetCode\Access\Tests\Support\Permission;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 final class RoleAssignmentHandlersTest extends TestCase
 {
     private Role $role;
+
+    private string $roleId;
 
     private InMemoryRoleRepository $roles;
 
@@ -39,11 +42,12 @@ final class RoleAssignmentHandlersTest extends TestCase
             id: RoleId::random(),
             name: new RoleName('manager'),
             label: 'Manager',
-            permissions: PermissionSet::from(['invoices.issue']),
+            permissions: PermissionSet::from([Permission::InvoicesIssue]),
             now: new DateTimeImmutable,
         );
         $this->role->releaseEvents();
 
+        $this->roleId = $this->role->id()->value();
         $this->roles = new InMemoryRoleRepository($this->role);
         $this->assignments = new InMemoryRoleAssignmentRepository;
     }
@@ -70,7 +74,7 @@ final class RoleAssignmentHandlersTest extends TestCase
     public function it_assigns_a_role_at_a_scope(): void
     {
         $this->assign()(new AssignRole(
-            role: 'manager',
+            roleId: $this->roleId,
             subjectId: Ids::SUBJECT,
             scopeId: Ids::STORE_A,
         ));
@@ -86,7 +90,7 @@ final class RoleAssignmentHandlersTest extends TestCase
     public function it_assigns_a_role_globally_when_no_scope_is_given(): void
     {
         $this->assign()(new AssignRole(
-            role: 'manager',
+            roleId: $this->roleId,
             subjectId: Ids::SUBJECT,
         ));
 
@@ -100,7 +104,7 @@ final class RoleAssignmentHandlersTest extends TestCase
     public function assigning_twice_is_idempotent(): void
     {
         $command = new AssignRole(
-            role: 'manager',
+            roleId: $this->roleId,
             subjectId: Ids::SUBJECT,
             scopeId: Ids::STORE_A,
         );
@@ -118,7 +122,7 @@ final class RoleAssignmentHandlersTest extends TestCase
         $this->expectException(RoleNotFoundException::class);
 
         $this->assign()(new AssignRole(
-            role: 'ghost',
+            roleId: RoleId::random()->value(),
             subjectId: Ids::SUBJECT,
         ));
     }
@@ -127,14 +131,14 @@ final class RoleAssignmentHandlersTest extends TestCase
     public function it_revokes_an_assignment_and_records_the_event(): void
     {
         $this->assign()(new AssignRole(
-            role: 'manager',
+            roleId: $this->roleId,
             subjectId: Ids::SUBJECT,
             scopeId: Ids::STORE_A,
         ));
         $this->assignments->published = [];
 
         $this->revoke()(new RevokeRole(
-            role: 'manager',
+            roleId: $this->roleId,
             subjectId: Ids::SUBJECT,
             scopeId: Ids::STORE_A,
         ));
@@ -146,10 +150,10 @@ final class RoleAssignmentHandlersTest extends TestCase
     #[Test]
     public function revoking_leaves_assignments_in_other_scopes_untouched(): void
     {
-        $this->assign()(new AssignRole(role: 'manager', subjectId: Ids::SUBJECT, scopeId: Ids::STORE_A));
-        $this->assign()(new AssignRole(role: 'manager', subjectId: Ids::SUBJECT, scopeId: Ids::STORE_B));
+        $this->assign()(new AssignRole(roleId: $this->roleId, subjectId: Ids::SUBJECT, scopeId: Ids::STORE_A));
+        $this->assign()(new AssignRole(roleId: $this->roleId, subjectId: Ids::SUBJECT, scopeId: Ids::STORE_B));
 
-        $this->revoke()(new RevokeRole(role: 'manager', subjectId: Ids::SUBJECT, scopeId: Ids::STORE_A));
+        $this->revoke()(new RevokeRole(roleId: $this->roleId, subjectId: Ids::SUBJECT, scopeId: Ids::STORE_A));
 
         $this->assertNull($this->assignments->find($this->role->id(), new SubjectId(Ids::SUBJECT), new ScopeId(Ids::STORE_A)));
         $this->assertNotNull($this->assignments->find($this->role->id(), new SubjectId(Ids::SUBJECT), new ScopeId(Ids::STORE_B)));
@@ -159,11 +163,22 @@ final class RoleAssignmentHandlersTest extends TestCase
     public function revoking_an_assignment_that_does_not_exist_is_a_no_op(): void
     {
         $this->revoke()(new RevokeRole(
-            role: 'manager',
+            roleId: $this->roleId,
             subjectId: Ids::SUBJECT,
         ));
 
         $this->assertSame([], $this->assignments->assignments);
         $this->assertSame([], $this->assignments->published);
+    }
+
+    #[Test]
+    public function revoking_an_unknown_role_fails(): void
+    {
+        $this->expectException(RoleNotFoundException::class);
+
+        $this->revoke()(new RevokeRole(
+            roleId: RoleId::random()->value(),
+            subjectId: Ids::SUBJECT,
+        ));
     }
 }

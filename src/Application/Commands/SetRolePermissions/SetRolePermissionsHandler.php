@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace NetCode\Access\Application\Commands\SetRolePermissions;
 
+use NetCode\Access\Application\Services\DeclaredPermissions;
 use NetCode\Access\Domain\Contracts\RoleRepository;
 use NetCode\Access\Domain\ValueObjects\PermissionSet;
 use NetCode\Access\Domain\ValueObjects\RoleId;
@@ -15,6 +16,7 @@ final readonly class SetRolePermissionsHandler implements CommandHandler
     public function __construct(
         private Clock $clock,
         private RoleRepository $roles,
+        private DeclaredPermissions $permissions,
     ) {}
 
     public function __invoke(
@@ -22,8 +24,12 @@ final readonly class SetRolePermissionsHandler implements CommandHandler
     ): null {
         $role = $this->roles->getById(RoleId::fromString($command->roleId));
 
+        $permissions = PermissionSet::from($command->permissions);
+
+        $this->permissions->assertDeclared($permissions);
+
         $role->setPermissions(
-            permissions: PermissionSet::from($command->permissions),
+            permissions: $permissions,
             now: $this->clock->now(),
         );
 

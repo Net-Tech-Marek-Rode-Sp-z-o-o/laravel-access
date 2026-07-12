@@ -7,7 +7,7 @@ namespace NetCode\Access\Application\Commands\AssignRole;
 use NetCode\Access\Domain\Contracts\RoleAssignmentRepository;
 use NetCode\Access\Domain\Contracts\RoleRepository;
 use NetCode\Access\Domain\RoleAssignment;
-use NetCode\Access\Domain\ValueObjects\RoleName;
+use NetCode\Access\Domain\ValueObjects\RoleId;
 use NetCode\Access\Domain\ValueObjects\ScopeId;
 use NetCode\Access\Domain\ValueObjects\SubjectId;
 use NetCode\Bus\Command\CommandHandler;
@@ -24,7 +24,7 @@ final readonly class AssignRoleHandler implements CommandHandler
     public function __invoke(
         AssignRole $command,
     ): null {
-        $role = $this->roles->getByName(new RoleName($command->role));
+        $role = $this->roles->getById(RoleId::fromString($command->roleId));
         $subjectId = new SubjectId($command->subjectId);
         $scopeId = ScopeId::fromNullable($command->scopeId);
 

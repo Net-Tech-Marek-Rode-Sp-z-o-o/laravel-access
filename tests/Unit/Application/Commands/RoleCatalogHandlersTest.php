@@ -11,6 +11,8 @@ use NetCode\Access\Application\Commands\DeleteRole\DeleteRole;
 use NetCode\Access\Application\Commands\DeleteRole\DeleteRoleHandler;
 use NetCode\Access\Application\Commands\SetRolePermissions\SetRolePermissions;
 use NetCode\Access\Application\Commands\SetRolePermissions\SetRolePermissionsHandler;
+use NetCode\Access\Application\Exceptions\UnknownPermissionException;
+use NetCode\Access\Application\Services\DeclaredPermissions;
 use NetCode\Access\Domain\Events\RoleCreated;
 use NetCode\Access\Domain\Events\RolePermissionsChanged;
 use NetCode\Access\Domain\Exceptions\RoleNameAlreadyTakenException;
@@ -19,8 +21,10 @@ use NetCode\Access\Domain\Role;
 use NetCode\Access\Domain\ValueObjects\PermissionSet;
 use NetCode\Access\Domain\ValueObjects\RoleId;
 use NetCode\Access\Domain\ValueObjects\RoleName;
+use NetCode\Access\Tests\Support\FakePermissionCatalog;
 use NetCode\Access\Tests\Support\FixedClock;
 use NetCode\Access\Tests\Support\InMemoryRoleRepository;
+use NetCode\Access\Tests\Support\Permission;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
@@ -39,7 +43,7 @@ final class RoleCatalogHandlersTest extends TestCase
             id: RoleId::random(),
             name: new RoleName($name),
             label: 'Manager',
-            permissions: PermissionSet::from(['invoices.issue']),
+            permissions: PermissionSet::from([Permission::InvoicesIssue]),
             now: new DateTimeImmutable,
         );
 
@@ -49,18 +53,40 @@ final class RoleCatalogHandlersTest extends TestCase
         return $role;
     }
 
+    private function declaring(Permission ...$permissions): DeclaredPermissions
+    {
+        return new DeclaredPermissions(new FakePermissionCatalog(...$permissions));
+    }
+
+    private function create(Permission ...$declared): CreateRoleHandler
+    {
+        return new CreateRoleHandler(
+            clock: new FixedClock,
+            roles: $this->roles,
+            permissions: $this->declaring(...$declared),
+        );
+    }
+
+    private function setPermissions(Permission ...$declared): SetRolePermissionsHandler
+    {
+        return new SetRolePermissionsHandler(
+            clock: new FixedClock,
+            roles: $this->roles,
+            permissions: $this->declaring(...$declared),
+        );
+    }
+
     #[Test]
     public function it_creates_a_role_with_its_permissions(): void
     {
-        $handler = new CreateRoleHandler(clock: new FixedClock, roles: $this->roles);
-
-        $roleId = $handler(new CreateRole(
+        $roleId = $this->create()(new CreateRole(
             name: 'Manager',
             label: 'Manager',
-            permissions: ['invoices.issue', 'users.invite'],
+            permissions: [Permission::InvoicesIssue->value, Permission::UsersInvite->value],
         ));
 
         $role = $this->roles->getById(RoleId::fromString($roleId));
+
         $this->assertSame('manager', $role->name()->value());
         $this->assertSame(['invoices.issue', 'users.invite'], $role->permissions()->toStrings());
         $this->assertInstanceOf(RoleCreated::class, $this->roles->published[0]);
@@ -70,13 +96,24 @@ final class RoleCatalogHandlersTest extends TestCase
     public function it_rejects_a_duplicate_role_name(): void
     {
         $this->existingRole('manager');
-        $handler = new CreateRoleHandler(clock: new FixedClock, roles: $this->roles);
 
         $this->expectException(RoleNameAlreadyTakenException::class);
 
-        $handler(new CreateRole(
+        $this->create()(new CreateRole(
             name: 'manager',
             label: 'Manager',
+        ));
+    }
+
+    #[Test]
+    public function it_rejects_a_permission_the_application_does_not_declare(): void
+    {
+        $this->expectException(UnknownPermissionException::class);
+
+        $this->create(Permission::InvoicesIssue)(new CreateRole(
+            name: 'manager',
+            label: 'Manager',
+            permissions: [Permission::UsersInvite->value],
         ));
     }
 
@@ -84,11 +121,10 @@ final class RoleCatalogHandlersTest extends TestCase
     public function it_sets_the_permissions_of_a_role(): void
     {
         $role = $this->existingRole();
-        $handler = new SetRolePermissionsHandler(clock: new FixedClock, roles: $this->roles);
 
-        $handler(new SetRolePermissions(
+        $this->setPermissions()(new SetRolePermissions(
             roleId: $role->id()->value(),
-            permissions: ['users.invite'],
+            permissions: [Permission::UsersInvite->value],
         ));
 
         $this->assertSame(['users.invite'], $this->roles->getById($role->id())->permissions()->toStrings());
@@ -96,13 +132,37 @@ final class RoleCatalogHandlersTest extends TestCase
     }
 
     #[Test]
+    public function setting_a_permission_the_application_does_not_declare_fails(): void
+    {
+        $role = $this->existingRole();
+
+        $this->expectException(UnknownPermissionException::class);
+
+        $this->setPermissions(Permission::InvoicesIssue)(new SetRolePermissions(
+            roleId: $role->id()->value(),
+            permissions: ['invoices.delete'],
+        ));
+    }
+
+    #[Test]
+    public function an_empty_catalog_declares_nothing_and_validates_nothing(): void
+    {
+        $role = $this->existingRole();
+
+        $this->setPermissions()(new SetRolePermissions(
+            roleId: $role->id()->value(),
+            permissions: ['anything.at.all'],
+        ));
+
+        $this->assertSame(['anything.at.all'], $this->roles->getById($role->id())->permissions()->toStrings());
+    }
+
+    #[Test]
     public function setting_permissions_on_an_unknown_role_fails(): void
     {
-        $handler = new SetRolePermissionsHandler(clock: new FixedClock, roles: $this->roles);
-
         $this->expectException(RoleNotFoundException::class);
 
-        $handler(new SetRolePermissions(
+        $this->setPermissions()(new SetRolePermissions(
             roleId: RoleId::random()->value(),
             permissions: [],
         ));
@@ -112,9 +172,8 @@ final class RoleCatalogHandlersTest extends TestCase
     public function it_deletes_a_role(): void
     {
         $role = $this->existingRole();
-        $handler = new DeleteRoleHandler(roles: $this->roles);
 
-        $handler(new DeleteRole(
+        new DeleteRoleHandler(roles: $this->roles)(new DeleteRole(
             roleId: $role->id()->value(),
         ));
 

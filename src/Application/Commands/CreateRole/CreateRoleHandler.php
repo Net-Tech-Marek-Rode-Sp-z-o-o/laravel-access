@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace NetCode\Access\Application\Commands\CreateRole;
 
+use NetCode\Access\Application\Services\DeclaredPermissions;
 use NetCode\Access\Domain\Contracts\RoleRepository;
 use NetCode\Access\Domain\Exceptions\RoleNameAlreadyTakenException;
 use NetCode\Access\Domain\Role;
@@ -17,6 +18,7 @@ final readonly class CreateRoleHandler implements CommandHandler
     public function __construct(
         private Clock $clock,
         private RoleRepository $roles,
+        private DeclaredPermissions $permissions,
     ) {}
 
     public function __invoke(
@@ -28,11 +30,15 @@ final readonly class CreateRoleHandler implements CommandHandler
             throw RoleNameAlreadyTakenException::for($name);
         }
 
+        $permissions = PermissionSet::from($command->permissions);
+
+        $this->permissions->assertDeclared($permissions);
+
         $role = Role::create(
             id: $this->roles->nextId(),
             name: $name,
             label: $command->label,
-            permissions: PermissionSet::from($command->permissions),
+            permissions: $permissions,
             now: $this->clock->now(),
         );
 

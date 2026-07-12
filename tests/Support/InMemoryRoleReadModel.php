@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace NetCode\Access\Tests\Support;
 
+use BackedEnum;
 use NetCode\Access\Application\Dto\RoleView;
 use NetCode\Access\Application\Ports\RoleReadModel;
 use NetCode\Access\Domain\Exceptions\RoleNotFoundException;
 use NetCode\Access\Domain\ValueObjects\RoleId;
+use NetCode\Access\Domain\ValueObjects\RoleName;
 
 final class InMemoryRoleReadModel implements RoleReadModel
 {
@@ -32,5 +34,18 @@ final class InMemoryRoleReadModel implements RoleReadModel
         $id = RoleId::fromString($roleId);
 
         return $this->roles[$id->value()] ?? throw RoleNotFoundException::withId($id);
+    }
+
+    public function getByName(string|BackedEnum $name): RoleView
+    {
+        $roleName = RoleName::from($name);
+
+        foreach ($this->roles as $role) {
+            if ($role->name === $roleName->value()) {
+                return $role;
+            }
+        }
+
+        throw RoleNotFoundException::withName($roleName);
     }
 }

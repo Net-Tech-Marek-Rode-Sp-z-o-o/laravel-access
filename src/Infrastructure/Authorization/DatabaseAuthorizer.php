@@ -14,11 +14,6 @@ use NetCode\Access\Domain\ValueObjects\ScopeId;
 use NetCode\Access\Domain\ValueObjects\SubjectId;
 use NetCode\Access\Infrastructure\DataAccess\Tables;
 
-/**
- * Request-scoped: each (subject, scope) permission set is resolved with one query and memoized,
- * so repeated checks in a request never hit the database again. A distributed cache slots in
- * behind {@see self::resolve()} without changing the port.
- */
 final class DatabaseAuthorizer implements Authorizer
 {
     private const string GLOBAL_SCOPE = '*';

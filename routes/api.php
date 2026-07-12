@@ -6,9 +6,12 @@ use Illuminate\Support\Facades\Route;
 use NetCode\Access\Presentation\Http\Controllers\AssignRoleController;
 use NetCode\Access\Presentation\Http\Controllers\CreateRoleController;
 use NetCode\Access\Presentation\Http\Controllers\DeleteRoleController;
+use NetCode\Access\Presentation\Http\Controllers\ListPermissionsController;
 use NetCode\Access\Presentation\Http\Controllers\ListRolesController;
 use NetCode\Access\Presentation\Http\Controllers\RevokeRoleController;
 use NetCode\Access\Presentation\Http\Controllers\SetRolePermissionsController;
+
+Route::get('permissions', ListPermissionsController::class);
 
 Route::get('roles', ListRolesController::class);
 Route::post('roles', CreateRoleController::class);

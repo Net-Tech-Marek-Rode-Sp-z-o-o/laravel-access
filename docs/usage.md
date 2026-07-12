@@ -55,7 +55,7 @@ plain strings — the package never learns what a subject *is*, only that it is 
 | `Authorizer` | `can($subjectId, $permission, $scopeId = null)`, `hasRole(...)`, `rolesOf($subjectId, $scopeId = null)`, `permissionsOf(...)` |
 | `RoleAssignments` | `assign($subjectId, $role, $scopeId = null)`, `revoke(...)` |
 | `RoleCatalog` | `create($name, $label, $permissions = [])` → role id, `setPermissions($roleId, $permissions)`, `delete($roleId)` |
-| `RoleReadModel` | `all()` → `list<RoleView>`, `get($roleId)` → `RoleView` (the read side, behind the `ListRoles` / `GetRole` queries) |
+| `RoleReadModel` | `all()` → `list<RoleView>`, `get($roleId)`, `getByName($name)` (a string or your role enum) → `RoleView` — the read side, behind the `ListRoles` / `GetRole` / `GetRoleByName` queries |
 
 ```php
 public function __construct(
@@ -69,13 +69,42 @@ $this->authorizer->can($userId, Permission::InvoicesIssue, $tenantId);
 `SetRolePermissions`, `DeleteRole`, `AssignRole`, `RevokeRole`) on `net-code/laravel-bus`, so every
 mutation runs inside the bus transaction. Dispatch the commands directly if you prefer.
 
+Every command is keyed by the role **id** — `AssignRole(roleId:, subjectId:, scopeId:)`. The ports
+are the convenient way in and take a role **name** (a string or your own enum), because that is what
+a host has at hand; `BusRoleAssignments` resolves the name through `GetRoleByName` and dispatches
+the id, so an unknown role fails with `RoleNotFoundException` either way.
+
 **Outbound** — bind a host adapter to override the default:
 
 | Port | Purpose | Default |
 |---|---|---|
 | `ScopeContext` | the current scope (tenant) of the request | `NullScopeContext` → `null` (single-tenant) |
 | `CurrentSubject` | the current subject id, used by the middleware | `NullCurrentSubject` → `null` |
+| `PermissionCatalog` | the permissions the app defines — your enum | `NullPermissionCatalog` → nothing declared, nothing validated |
 | `Clock` | time source (`net-code/laravel-kit`) | `SystemClock` |
+
+### Declaring your permissions
+
+Bind `PermissionCatalog` over your enum and the package starts refusing a role permission the
+application does not know — a typo in the admin UI becomes a **422** instead of a permission nobody
+will ever hold:
+
+```php
+final readonly class AppPermissions implements PermissionCatalog
+{
+    /** @return iterable<Permission> */
+    public function all(): iterable
+    {
+        return Permission::cases();
+    }
+}
+
+$this->app->bind(PermissionCatalog::class, AppPermissions::class);
+```
+
+Leave it unbound (the default) and the catalog is empty, which means *undeclared*, not *nothing
+allowed*: the package has nothing to check against, so any string is accepted. The same catalog
+backs `GET /access/permissions`, which is what an admin UI lists in its permission picker.
 
 **Internal** — swappable adapters (defaults wired): `RoleRepository` /
 `RoleAssignmentRepository` → Eloquent, `Authorizer` → `DatabaseAuthorizer` (request-scoped).
@@ -121,6 +150,7 @@ The package mounts a thin role-management API under `config('access.route_prefix
 
 | Method | Path | Body / query | Success |
 |---|---|---|---|
+| `GET` | `/access/permissions` | — | **200** `{data: ["invoices.issue", …]}` (what `PermissionCatalog` declares) |
 | `GET` | `/access/roles` | — | **200** `{data: [{id, name, label, permissions: []}]}` |
 | `POST` | `/access/roles` | `{name, label}` | **201** `{data: {id}}` |
 | `DELETE` | `/access/roles/{role_id}` | — | **204** |
@@ -130,8 +160,9 @@ The package mounts a thin role-management API under `config('access.route_prefix
 
 Input is validated (`spatie/laravel-data`, snake_case keys); every non-empty success body is wrapped
 in `{"data": …}` (`JsonResource`) with snake_case fields. Errors reuse the package's renderable
-exceptions: unknown role → **404**, duplicate role name / invalid value → **422**. Path segments are
-constrained to UUIDs, so a malformed `{role_id}` / `{subject_id}` matches no route → **404**.
+exceptions: unknown role → **404**, duplicate role name / undeclared permission / invalid value →
+**422**. Path segments are constrained to UUIDs, so a malformed `{role_id}` / `{subject_id}` matches
+no route → **404**.
 
 Omitting `scope_id` means the **global** scope — an assignment without a scope grants everywhere,
 and a revoke without a scope only removes the global assignment (a scoped one survives).
@@ -176,10 +207,14 @@ Within a tenant, the permission is unrestricted: a tenant admin may grant **any*
 catalogue — including one carrying permissions it does not itself hold — to anybody, scoped to its
 tenant. If you need to stop that, wrap `RoleAssignments` in your own policy.
 
-Set `admin_permission` to `null` to mount the routes unguarded (both middlewares are skipped —
-you protect them yourself), or `routes` to `false` to not register them at all (publish
-`access-routes` to `routes/access.php` and wire your own; leave `routes` on `true` and you get both
-copies).
+Set `admin_permission` to `null` to mount the routes unguarded (both middlewares are skipped — you
+protect them yourself).
+
+To wire the routes yourself, publish `access-routes` (it lands in `routes/access.php`) **and set
+`routes` to `false`**. Those two go together: the package registers its own group in the provider,
+so a published copy that the host also loads means the same URIs are declared twice, and the copy
+registered last — yours, with whatever middleware you gave it — is the one that answers. Leaving
+`routes` on `true` therefore silently shadows the guarded group with the published one.
 
 ## Laravel Gate
 
@@ -229,7 +264,8 @@ domain event publisher — subscribe for audit trails or cache invalidation.
 
 ## Errors
 
-`RoleNotFoundException` → 404, `RoleNameAlreadyTakenException` → 422, invalid value objects
+`RoleNotFoundException` → 404, `RoleNameAlreadyTakenException` → 422, `UnknownPermissionException`
+(a permission the `PermissionCatalog` does not declare) → 422, invalid value objects
 (`InvalidArgumentException`) → 422.
 
 ## Testing the package

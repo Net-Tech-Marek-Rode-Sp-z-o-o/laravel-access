@@ -36,9 +36,6 @@ final readonly class RequireScopeOwnership
             throw new UnauthorizedHttpException('Bearer', 'Unauthenticated.');
         }
 
-        // A global grant of the permission is what makes a platform admin; anyone else only
-        // holds it inside a scope, so they may not write outside that scope — the role
-        // catalogue included, since roles are global and carry no scope_id.
         if ($this->authorizer->can($subjectId, $permission)) {
             return $next($request);
         }

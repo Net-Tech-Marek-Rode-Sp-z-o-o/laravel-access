@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace NetCode\Access\Infrastructure\DataAccess\ReadModels;
 
+use BackedEnum;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Database\Query\Builder;
 use NetCode\Access\Application\Dto\RoleView;
 use NetCode\Access\Application\Ports\RoleReadModel;
 use NetCode\Access\Domain\Exceptions\RoleNotFoundException;
 use NetCode\Access\Domain\ValueObjects\RoleId;
+use NetCode\Access\Domain\ValueObjects\RoleName;
 use NetCode\Access\Infrastructure\DataAccess\Tables;
 
 final readonly class DatabaseRoleReadModel implements RoleReadModel
@@ -31,6 +33,15 @@ final readonly class DatabaseRoleReadModel implements RoleReadModel
         $views = $this->views($this->query()->where('r.id', $id->value()));
 
         return $views[0] ?? throw RoleNotFoundException::withId($id);
+    }
+
+    public function getByName(string|BackedEnum $name): RoleView
+    {
+        $roleName = RoleName::from($name);
+
+        $views = $this->views($this->query()->where('r.name', $roleName->value()));
+
+        return $views[0] ?? throw RoleNotFoundException::withName($roleName);
     }
 
     private function query(): Builder

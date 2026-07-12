@@ -12,7 +12,7 @@ use NetCode\Bus\Command\HandledBy;
 final readonly class RevokeRole implements Command
 {
     public function __construct(
-        public string $role,
+        public string $roleId,
         public string $subjectId,
         public string|null $scopeId = null,
     ) {}

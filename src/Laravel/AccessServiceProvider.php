@@ -12,8 +12,10 @@ use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use NetCode\Access\Application\Exceptions\UnknownPermissionException;
 use NetCode\Access\Application\Ports\Authorizer;
 use NetCode\Access\Application\Ports\CurrentSubject;
+use NetCode\Access\Application\Ports\PermissionCatalog;
 use NetCode\Access\Application\Ports\RoleAssignments;
 use NetCode\Access\Application\Ports\RoleCatalog;
 use NetCode\Access\Application\Ports\RoleReadModel;
@@ -32,6 +34,7 @@ use NetCode\Access\Infrastructure\Bus\BusRoleCatalog;
 use NetCode\Access\Infrastructure\DataAccess\ReadModels\DatabaseRoleReadModel;
 use NetCode\Access\Infrastructure\DataAccess\Repositories\EloquentRoleAssignmentRepository;
 use NetCode\Access\Infrastructure\DataAccess\Repositories\EloquentRoleRepository;
+use NetCode\Access\Infrastructure\Permissions\NullPermissionCatalog;
 use NetCode\Access\Infrastructure\Scope\NullScopeContext;
 use NetCode\Access\Infrastructure\Subject\NullCurrentSubject;
 use NetCode\Access\Presentation\Http\Middleware\RequirePermission;
@@ -50,6 +53,7 @@ final class AccessServiceProvider extends ServiceProvider
         $this->app->bind(Clock::class, SystemClock::class);
         $this->app->bind(ScopeContext::class, NullScopeContext::class);
         $this->app->bind(CurrentSubject::class, NullCurrentSubject::class);
+        $this->app->bind(PermissionCatalog::class, NullPermissionCatalog::class);
         $this->app->bind(RoleCatalog::class, BusRoleCatalog::class);
         $this->app->bind(RoleAssignments::class, BusRoleAssignments::class);
         $this->app->bind(RoleRepository::class, EloquentRoleRepository::class);
@@ -144,7 +148,6 @@ final class AccessServiceProvider extends ServiceProvider
                 return null;
             }
 
-            // null, not false: abstain so Policies still get their say on abilities we do not grant.
             return $granted ? true : null;
         });
     }
@@ -170,6 +173,7 @@ final class AccessServiceProvider extends ServiceProvider
 
         $handler->renderable(fn (RoleNotFoundException $e): JsonResponse => new JsonResponse(['message' => $e->getMessage()], Response::HTTP_NOT_FOUND));
         $handler->renderable(fn (RoleNameAlreadyTakenException $e): JsonResponse => new JsonResponse(['message' => $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY));
+        $handler->renderable(fn (UnknownPermissionException $e): JsonResponse => new JsonResponse(['message' => $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY));
         $handler->renderable(fn (InvalidArgumentException $e): JsonResponse => new JsonResponse(['message' => $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY));
     }
 }
