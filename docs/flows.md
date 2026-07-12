@@ -55,6 +55,39 @@ subject's assignments in other scopes untouched.
 A grant is denied unless some role of the subject — global, or scoped to the scope being checked —
 carries the permission.
 
+## Reading the catalogue
+
+`ListRoles` / `GetRole` queries → `RoleReadModel` → `list<RoleView>` / `RoleView`.
+
+The read side never touches the aggregates: one join over `access_roles × access_role_permission`
+returns every role with its permissions, so listing the catalogue costs a single query no matter how
+many roles there are. `GetRole` on an unknown id raises `RoleNotFoundException` (**404**).
+
+## Managing roles over HTTP
+
+Every admin route runs behind `RequirePermission:{config('access.admin_permission')}` — the admin is
+just a subject holding that permission, resolved exactly like any other check (so it is scope-aware:
+an admin granted inside store A is forbidden on a request scoped to store B). No subject → **401**,
+no permission → **403**.
+
+1. `POST /access/roles` → `CreateRole` → **201** `{data: {id}}`; a duplicate name → **422**.
+2. `GET /access/roles` → `ListRoles` → **200** `{data: [{id, name, label, permissions}]}`.
+3. `PUT /access/roles/{roleId}/permissions` → `SetRolePermissions` → **204**; the set is replaced
+   wholesale and the flushed memo makes the very next check see the new permissions.
+4. `DELETE /access/roles/{roleId}` → `DeleteRole` → **204**; permissions and assignments cascade.
+
+## Assigning a role over HTTP
+
+`POST /access/subjects/{subjectId}/roles` with `{role_id, scope_id?}`.
+
+The commands are keyed by role *name*, the API by role *id*, so the controller first asks `GetRole`
+— which doubles as the existence check (unknown role → **404**) — and then dispatches `AssignRole`
+with the name. `DELETE /access/subjects/{subjectId}/roles/{roleId}?scope_id=` mirrors it onto
+`RevokeRole`. Both answer **204**, and both are idempotent, exactly like the ports they wrap.
+
+Omitting `scope_id` means the global scope: assigning without one grants everywhere, revoking
+without one removes only the global assignment and leaves scoped ones in place.
+
 ## Protecting a route
 
 `->middleware('permission:invoices.issue')`.

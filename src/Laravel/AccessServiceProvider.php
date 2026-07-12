@@ -10,11 +10,13 @@ use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use NetCode\Access\Application\Ports\Authorizer;
 use NetCode\Access\Application\Ports\CurrentSubject;
 use NetCode\Access\Application\Ports\RoleAssignments;
 use NetCode\Access\Application\Ports\RoleCatalog;
+use NetCode\Access\Application\Ports\RoleReadModel;
 use NetCode\Access\Application\Ports\ScopeContext;
 use NetCode\Access\Domain\Contracts\RoleAssignmentRepository;
 use NetCode\Access\Domain\Contracts\RoleRepository;
@@ -27,6 +29,7 @@ use NetCode\Access\Infrastructure\Authorization\DatabaseAuthorizer;
 use NetCode\Access\Infrastructure\Authorization\FlushResolvedPermissions;
 use NetCode\Access\Infrastructure\Bus\BusRoleAssignments;
 use NetCode\Access\Infrastructure\Bus\BusRoleCatalog;
+use NetCode\Access\Infrastructure\DataAccess\ReadModels\DatabaseRoleReadModel;
 use NetCode\Access\Infrastructure\DataAccess\Repositories\EloquentRoleAssignmentRepository;
 use NetCode\Access\Infrastructure\DataAccess\Repositories\EloquentRoleRepository;
 use NetCode\Access\Infrastructure\Scope\NullScopeContext;
@@ -35,6 +38,7 @@ use NetCode\Access\Presentation\Http\Middleware\RequirePermission;
 use NetCode\Domain\Exception\InvalidArgumentException;
 use NetCode\Kit\Clock;
 use NetCode\Kit\SystemClock;
+use Symfony\Component\HttpFoundation\Response;
 
 final class AccessServiceProvider extends ServiceProvider
 {
@@ -49,6 +53,7 @@ final class AccessServiceProvider extends ServiceProvider
         $this->app->bind(RoleAssignments::class, BusRoleAssignments::class);
         $this->app->bind(RoleRepository::class, EloquentRoleRepository::class);
         $this->app->bind(RoleAssignmentRepository::class, EloquentRoleAssignmentRepository::class);
+        $this->app->bind(RoleReadModel::class, DatabaseRoleReadModel::class);
 
         $this->app->scoped(DatabaseAuthorizer::class);
         $this->app->bind(Authorizer::class, DatabaseAuthorizer::class);
@@ -59,6 +64,7 @@ final class AccessServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(__DIR__.'/../../database/migrations');
 
         $this->registerMiddlewareAlias();
+        $this->registerRoutes();
         $this->registerGate();
         $this->registerCacheInvalidation();
         $this->registerExceptionRendering();
@@ -71,7 +77,36 @@ final class AccessServiceProvider extends ServiceProvider
             $this->publishes([
                 __DIR__.'/../../database/migrations' => $this->app->databasePath('migrations'),
             ], 'access-migrations');
+
+            $this->publishes([
+                __DIR__.'/../../routes/api.php' => $this->app->basePath('routes/access.php'),
+            ], 'access-routes');
         }
+    }
+
+    private function registerRoutes(): void
+    {
+        if (config('access.routes') !== true) {
+            return;
+        }
+
+        $prefix = config('access.route_prefix');
+
+        Route::prefix(is_string($prefix) ? $prefix : '')
+            ->middleware($this->routeMiddleware())
+            ->group(__DIR__.'/../../routes/api.php');
+    }
+
+    /** @return list<string> */
+    private function routeMiddleware(): array
+    {
+        $permission = config('access.admin_permission');
+
+        if (! is_string($permission) || $permission === '') {
+            return ['api'];
+        }
+
+        return ['api', RequirePermission::class.':'.$permission];
     }
 
     private function registerMiddlewareAlias(): void
@@ -128,8 +163,8 @@ final class AccessServiceProvider extends ServiceProvider
             return;
         }
 
-        $handler->renderable(fn (RoleNotFoundException $e): JsonResponse => new JsonResponse(['message' => $e->getMessage()], 404));
-        $handler->renderable(fn (RoleNameAlreadyTakenException $e): JsonResponse => new JsonResponse(['message' => $e->getMessage()], 422));
-        $handler->renderable(fn (InvalidArgumentException $e): JsonResponse => new JsonResponse(['message' => $e->getMessage()], 422));
+        $handler->renderable(fn (RoleNotFoundException $e): JsonResponse => new JsonResponse(['message' => $e->getMessage()], Response::HTTP_NOT_FOUND));
+        $handler->renderable(fn (RoleNameAlreadyTakenException $e): JsonResponse => new JsonResponse(['message' => $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY));
+        $handler->renderable(fn (InvalidArgumentException $e): JsonResponse => new JsonResponse(['message' => $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY));
     }
 }

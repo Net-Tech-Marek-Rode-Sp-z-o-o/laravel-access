@@ -8,6 +8,12 @@ return [
 
     'gate' => true,
 
+    'routes' => true,
+
+    'route_prefix' => 'access',
+
+    'admin_permission' => 'access.roles.manage',
+
     'table_prefix' => 'access_',
 
 ];

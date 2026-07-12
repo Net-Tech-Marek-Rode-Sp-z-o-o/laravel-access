@@ -9,4 +9,5 @@ enum Permission: string
     case InvoicesIssue = 'invoices.issue';
     case UsersInvite = 'users.invite';
     case UsersRemove = 'users.remove';
+    case RolesManage = 'access.roles.manage';
 }

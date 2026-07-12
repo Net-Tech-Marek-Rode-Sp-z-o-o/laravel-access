@@ -21,8 +21,9 @@ Route::post('/invoices', IssueInvoiceController::class)->middleware('permission:
 
 Roles + permissions · role↔permission mapping · subject↔role assignment (global or scoped) ·
 `Authorizer` (one query per request, memoized) · `permission:` route middleware · `Gate::before`
-integration (`$user->can()`, Policies, `@can`). Role hierarchy, admin HTTP routes and a distributed
-cache are seamed next steps.
+integration (`$user->can()`, Policies, `@can`) · an admin API to manage roles and assignments,
+guarded by `config('access.admin_permission')`. Role hierarchy and a distributed cache are seamed
+next steps.
 
 The core is **subject-agnostic** (`subjectId: string`): it never depends on the identity
 package — the host wires the bridge.

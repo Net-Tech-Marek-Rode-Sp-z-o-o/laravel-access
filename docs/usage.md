@@ -41,6 +41,9 @@ plain strings — the package never learns what a subject *is*, only that it is 
 |---|---|---|
 | `middleware_alias` | `permission` | alias for the `RequirePermission` middleware |
 | `gate` | `true` | register `Gate::before` so `$user->can()` / Policies see the permissions |
+| `routes` | `true` | register the admin routes |
+| `route_prefix` | `access` | prefix the admin routes are mounted under |
+| `admin_permission` | `access.roles.manage` | permission required by every admin route (`null` → the host guards them) |
 | `table_prefix` | `access_` | prefix of the three tables (applies to migrations and queries) |
 
 ## Ports (hexagonal)
@@ -52,6 +55,7 @@ plain strings — the package never learns what a subject *is*, only that it is 
 | `Authorizer` | `can($subjectId, $permission, $scopeId = null)`, `hasRole(...)`, `rolesOf($subjectId, $scopeId = null)`, `permissionsOf(...)` |
 | `RoleAssignments` | `assign($subjectId, $role, $scopeId = null)`, `revoke(...)` |
 | `RoleCatalog` | `create($name, $label, $permissions = [])` → role id, `setPermissions($roleId, $permissions)`, `delete($roleId)` |
+| `RoleReadModel` | `all()` → `list<RoleView>`, `get($roleId)` → `RoleView` (the read side, behind the `ListRoles` / `GetRole` queries) |
 
 ```php
 public function __construct(
@@ -109,6 +113,53 @@ Route::delete('/users/{id}', RemoveUserController::class)->middleware('permissio
 ```
 
 No subject → **401**. Subject without the permission (in the current scope) → **403**.
+
+## Admin API
+
+The package mounts a thin role-management API under `config('access.route_prefix')` (default
+`access`), on the `api` middleware group:
+
+| Method | Path | Body / query | Success |
+|---|---|---|---|
+| `GET` | `/access/roles` | — | **200** `{data: [{id, name, label, permissions: []}]}` |
+| `POST` | `/access/roles` | `{name, label}` | **201** `{data: {id}}` |
+| `DELETE` | `/access/roles/{roleId}` | — | **204** |
+| `PUT` | `/access/roles/{roleId}/permissions` | `{permissions: []}` (replaces the whole set) | **204** |
+| `POST` | `/access/subjects/{subjectId}/roles` | `{role_id, scope_id?}` | **204** |
+| `DELETE` | `/access/subjects/{subjectId}/roles/{roleId}` | `?scope_id=` | **204** |
+
+Input is validated (`spatie/laravel-data`, snake_case keys); every non-empty success body is wrapped
+in `{"data": …}` (`JsonResource`) with snake_case fields. Errors reuse the package's renderable
+exceptions: unknown role → **404**, duplicate role name / invalid value → **422**.
+
+Omitting `scope_id` means the **global** scope — an assignment without a scope grants everywhere,
+and a revoke without a scope only removes the global assignment (a scoped one survives).
+
+**The admin routes are guarded by `config('access.admin_permission')`** (default
+`access.roles.manage`), enforced by `RequirePermission` like any other route: no subject → 401, no
+permission → 403. The host must **declare that permission in its own catalog and attach it to an
+admin role** — the package ships no seed, so until you grant it to somebody, nobody can call these
+endpoints:
+
+```php
+enum Permission: string
+{
+    case RolesManage = 'access.roles.manage';   // guards the admin API
+    case InvoicesIssue = 'invoices.issue';
+}
+
+$roles->create(name: 'global-admin', label: 'Global admin', permissions: [Permission::RolesManage]);
+$assignments->assign(subjectId: $founderId, role: 'global-admin');    // global: no scope
+```
+
+The permission is scope-aware: granted inside a scope, it only admits the admin while
+`ScopeContext::current()` returns that scope — a tenant admin cannot manage roles from another
+tenant's request. It does **not** restrict *which* role or scope the body may name, so anyone
+holding it can grant any role anywhere; treat it as a platform-admin permission.
+
+Set `admin_permission` to `null` to mount the routes unguarded and protect them yourself, or
+`routes` to `false` to not register them at all (publish `access-routes` to `routes/access.php` and
+wire your own).
 
 ## Laravel Gate
 
