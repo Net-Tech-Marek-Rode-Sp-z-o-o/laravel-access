@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace NetCode\Access\Tests\Unit\Application;
+namespace NetCode\Access\Tests\Unit\Application\Commands;
 
 use DateTimeImmutable;
 use NetCode\Access\Application\Commands\AssignRole\AssignRole;

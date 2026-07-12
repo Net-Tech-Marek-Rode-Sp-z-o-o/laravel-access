@@ -7,4 +7,10 @@ RUN apt-get update \
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
+# The repo is bind-mounted from the host, so its files are owned by the host UID, not
+# the container's root — tell git to trust it, and give composer a version so it does not
+# probe git for one.
+RUN git config --global --add safe.directory /pkg
+ENV COMPOSER_ROOT_VERSION=dev-main
+
 WORKDIR /pkg
