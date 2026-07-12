@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace NetCode\Access\Domain;
 
 use DateTimeImmutable;
-use NetCode\Access\Domain\Event\RoleAssigned;
-use NetCode\Access\Domain\Event\RoleRevoked;
+use NetCode\Access\Domain\Events\RoleAssigned;
+use NetCode\Access\Domain\Events\RoleRevoked;
 use NetCode\Access\Domain\ValueObjects\RoleId;
 use NetCode\Access\Domain\ValueObjects\ScopeId;
 use NetCode\Access\Domain\ValueObjects\SubjectId;

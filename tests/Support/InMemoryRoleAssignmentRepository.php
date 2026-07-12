@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace NetCode\Access\Tests\Support;
 
-use NetCode\Access\Domain\Contract\RoleAssignmentRepository;
+use NetCode\Access\Domain\Contracts\RoleAssignmentRepository;
 use NetCode\Access\Domain\RoleAssignment;
 use NetCode\Access\Domain\ValueObjects\RoleId;
 use NetCode\Access\Domain\ValueObjects\ScopeId;

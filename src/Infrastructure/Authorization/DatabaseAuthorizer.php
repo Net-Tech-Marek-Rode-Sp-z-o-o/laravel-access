@@ -7,7 +7,7 @@ namespace NetCode\Access\Infrastructure\Authorization;
 use BackedEnum;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Database\Query\Builder;
-use NetCode\Access\Application\Port\Authorizer;
+use NetCode\Access\Application\Ports\Authorizer;
 use NetCode\Access\Domain\ValueObjects\PermissionId;
 use NetCode\Access\Domain\ValueObjects\RoleName;
 use NetCode\Access\Domain\ValueObjects\ScopeId;

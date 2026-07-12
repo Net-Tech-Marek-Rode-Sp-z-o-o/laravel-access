@@ -7,7 +7,7 @@ namespace NetCode\Access\Infrastructure\DataAccess\Repositories;
 use DateTimeImmutable;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Database\Query\Builder;
-use NetCode\Access\Domain\Contract\RoleAssignmentRepository;
+use NetCode\Access\Domain\Contracts\RoleAssignmentRepository;
 use NetCode\Access\Domain\RoleAssignment;
 use NetCode\Access\Domain\ValueObjects\RoleId;
 use NetCode\Access\Domain\ValueObjects\ScopeId;

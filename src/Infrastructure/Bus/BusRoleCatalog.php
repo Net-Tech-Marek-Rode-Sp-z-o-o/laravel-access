@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace NetCode\Access\Infrastructure\Bus;
 
 use BackedEnum;
-use NetCode\Access\Application\Command\CreateRole\CreateRole;
-use NetCode\Access\Application\Command\DeleteRole\DeleteRole;
-use NetCode\Access\Application\Command\SetRolePermissions\SetRolePermissions;
-use NetCode\Access\Application\Port\RoleCatalog;
+use NetCode\Access\Application\Commands\CreateRole\CreateRole;
+use NetCode\Access\Application\Commands\DeleteRole\DeleteRole;
+use NetCode\Access\Application\Commands\SetRolePermissions\SetRolePermissions;
+use NetCode\Access\Application\Ports\RoleCatalog;
 use NetCode\Access\Domain\ValueObjects\PermissionSet;
 use NetCode\Access\Domain\ValueObjects\RoleName;
 use NetCode\Bus\Command\CommandBus;

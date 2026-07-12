@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace NetCode\Access\Infrastructure\Bus;
 
 use BackedEnum;
-use NetCode\Access\Application\Command\AssignRole\AssignRole;
-use NetCode\Access\Application\Command\RevokeRole\RevokeRole;
-use NetCode\Access\Application\Port\RoleAssignments;
+use NetCode\Access\Application\Commands\AssignRole\AssignRole;
+use NetCode\Access\Application\Commands\RevokeRole\RevokeRole;
+use NetCode\Access\Application\Ports\RoleAssignments;
 use NetCode\Access\Domain\ValueObjects\RoleName;
 use NetCode\Bus\Command\CommandBus;
 

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace NetCode\Access\Infrastructure\Scope;
 
-use NetCode\Access\Application\Port\ScopeContext;
+use NetCode\Access\Application\Ports\ScopeContext;
 
 final class NullScopeContext implements ScopeContext
 {

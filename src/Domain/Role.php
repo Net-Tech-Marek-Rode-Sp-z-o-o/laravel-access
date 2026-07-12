@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace NetCode\Access\Domain;
 
 use DateTimeImmutable;
-use NetCode\Access\Domain\Event\RoleCreated;
-use NetCode\Access\Domain\Event\RolePermissionsChanged;
+use NetCode\Access\Domain\Events\RoleCreated;
+use NetCode\Access\Domain\Events\RolePermissionsChanged;
 use NetCode\Access\Domain\ValueObjects\PermissionId;
 use NetCode\Access\Domain\ValueObjects\PermissionSet;
 use NetCode\Access\Domain\ValueObjects\RoleId;

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace NetCode\Access\Infrastructure\DataAccess\Repositories;
 
 use Illuminate\Database\DatabaseManager;
-use NetCode\Access\Domain\Contract\RoleRepository;
-use NetCode\Access\Domain\Exception\RoleNotFoundException;
+use NetCode\Access\Domain\Contracts\RoleRepository;
+use NetCode\Access\Domain\Exceptions\RoleNotFoundException;
 use NetCode\Access\Domain\Role;
 use NetCode\Access\Domain\ValueObjects\PermissionSet;
 use NetCode\Access\Domain\ValueObjects\RoleId;

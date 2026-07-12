@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace NetCode\Access\Infrastructure\Authorization;
 
-use NetCode\Access\Domain\Event\RoleAssigned;
-use NetCode\Access\Domain\Event\RolePermissionsChanged;
-use NetCode\Access\Domain\Event\RoleRevoked;
+use NetCode\Access\Domain\Events\RoleAssigned;
+use NetCode\Access\Domain\Events\RolePermissionsChanged;
+use NetCode\Access\Domain\Events\RoleRevoked;
 
 final readonly class FlushResolvedPermissions
 {

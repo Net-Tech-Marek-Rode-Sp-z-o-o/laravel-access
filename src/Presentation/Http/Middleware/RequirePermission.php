@@ -6,9 +6,9 @@ namespace NetCode\Access\Presentation\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use NetCode\Access\Application\Port\Authorizer;
-use NetCode\Access\Application\Port\CurrentSubject;
-use NetCode\Access\Application\Port\ScopeContext;
+use NetCode\Access\Application\Ports\Authorizer;
+use NetCode\Access\Application\Ports\CurrentSubject;
+use NetCode\Access\Application\Ports\ScopeContext;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;

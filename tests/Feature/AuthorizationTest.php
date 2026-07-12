@@ -6,9 +6,9 @@ namespace NetCode\Access\Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
-use NetCode\Access\Application\Port\Authorizer;
-use NetCode\Access\Application\Port\RoleAssignments;
-use NetCode\Access\Application\Port\RoleCatalog;
+use NetCode\Access\Application\Ports\Authorizer;
+use NetCode\Access\Application\Ports\RoleAssignments;
+use NetCode\Access\Application\Ports\RoleCatalog;
 use NetCode\Access\Tests\Support\Ids;
 use NetCode\Access\Tests\Support\Permission;
 use NetCode\Access\Tests\Support\Role;

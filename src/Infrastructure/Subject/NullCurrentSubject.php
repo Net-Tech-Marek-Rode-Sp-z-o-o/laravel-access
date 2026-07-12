@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace NetCode\Access\Infrastructure\Subject;
 
-use NetCode\Access\Application\Port\CurrentSubject;
+use NetCode\Access\Application\Ports\CurrentSubject;
 
 final class NullCurrentSubject implements CurrentSubject
 {
