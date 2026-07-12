@@ -84,7 +84,7 @@ The core never references `net-code/laravel-identity`. The host binds the bridge
 final readonly class IdentityCurrentSubject implements CurrentSubject
 {
     public function __construct(
-        private CurrentUser $users,          // NetCode\Identity\Application\Port\CurrentUser
+        private CurrentUser $users,          // NetCode\Identity\Application\Ports\CurrentUser
     ) {}
 
     public function id(): string|null
