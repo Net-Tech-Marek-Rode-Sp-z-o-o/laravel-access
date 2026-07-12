@@ -15,12 +15,12 @@ use Spatie\LaravelData\Mappers\SnakeCaseMapper;
 final class RevokeRoleData extends Data
 {
     public function __construct(
-        #[FromRouteParameter('subjectId')]
-        #[WithoutValidation]
-        public string $subjectId,
-        #[FromRouteParameter('roleId')]
+        #[FromRouteParameter('role_id')]
         #[WithoutValidation]
         public string $roleId,
+        #[FromRouteParameter('subject_id')]
+        #[WithoutValidation]
+        public string $subjectId,
         #[Uuid]
         public string|null $scopeId = null,
     ) {}

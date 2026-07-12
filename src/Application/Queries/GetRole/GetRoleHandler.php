@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace NetCode\Access\Application\Queries\GetRole;
 
+use NetCode\Access\Application\Dto\RoleView;
 use NetCode\Access\Application\Ports\RoleReadModel;
-use NetCode\Access\Application\ReadModels\RoleView;
 use NetCode\Bus\Query\QueryHandler;
 
 final readonly class GetRoleHandler implements QueryHandler

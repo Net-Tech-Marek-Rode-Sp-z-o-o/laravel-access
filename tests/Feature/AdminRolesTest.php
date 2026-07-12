@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace NetCode\Access\Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use NetCode\Access\Application\Ports\Authorizer;
 use NetCode\Access\Application\Ports\CurrentSubject;
 use NetCode\Access\Application\Ports\RoleAssignments;
 use NetCode\Access\Application\Ports\RoleCatalog;
 use NetCode\Access\Application\Ports\ScopeContext;
 use NetCode\Access\Domain\ValueObjects\RoleId;
+use NetCode\Access\Infrastructure\DataAccess\Tables;
 use NetCode\Access\Tests\Support\FakeCurrentSubject;
 use NetCode\Access\Tests\Support\FakeScopeContext;
 use NetCode\Access\Tests\Support\Ids;
@@ -248,6 +250,39 @@ final class AdminRolesTest extends TestCase
         $this->postJson('/access/subjects/'.Ids::OTHER_SUBJECT.'/roles', ['role_id' => 'not-a-uuid'])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('role_id');
+    }
+
+    #[Test]
+    public function a_route_parameter_that_is_not_a_uuid_matches_no_route(): void
+    {
+        $this->actingAsAdmin();
+
+        $this->deleteJson('/access/roles/not-a-uuid')->assertNotFound();
+        $this->putJson('/access/roles/not-a-uuid/permissions', ['permissions' => []])->assertNotFound();
+        $this->postJson('/access/subjects/not-a-uuid/roles', ['role_id' => RoleId::random()->value()])
+            ->assertNotFound();
+    }
+
+    #[Test]
+    public function the_whole_catalogue_is_listed_with_one_query(): void
+    {
+        $this->actingAsAdmin();
+
+        $this->createManager();
+
+        DB::connection()->flushQueryLog();
+        DB::connection()->enableQueryLog();
+
+        $this->getJson('/access/roles')->assertOk()->assertJsonCount(2, 'data');
+
+        $reads = array_values(array_filter(
+            DB::connection()->getQueryLog(),
+            static fn (array $query): bool => str_contains((string) $query['query'], Tables::roles())
+                && ! str_contains((string) $query['query'], Tables::roleUser()),
+        ));
+
+        $this->assertCount(1, $reads, 'the catalogue must be read with a single query');
+        $this->assertStringContainsString(Tables::rolePermission(), (string) $reads[0]['query']);
     }
 
     #[Test]

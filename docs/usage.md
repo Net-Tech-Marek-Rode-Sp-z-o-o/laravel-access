@@ -123,14 +123,15 @@ The package mounts a thin role-management API under `config('access.route_prefix
 |---|---|---|---|
 | `GET` | `/access/roles` | — | **200** `{data: [{id, name, label, permissions: []}]}` |
 | `POST` | `/access/roles` | `{name, label}` | **201** `{data: {id}}` |
-| `DELETE` | `/access/roles/{roleId}` | — | **204** |
-| `PUT` | `/access/roles/{roleId}/permissions` | `{permissions: []}` (replaces the whole set) | **204** |
-| `POST` | `/access/subjects/{subjectId}/roles` | `{role_id, scope_id?}` | **204** |
-| `DELETE` | `/access/subjects/{subjectId}/roles/{roleId}` | `?scope_id=` | **204** |
+| `DELETE` | `/access/roles/{role_id}` | — | **204** |
+| `PUT` | `/access/roles/{role_id}/permissions` | `{permissions: []}` (replaces the whole set) | **204** |
+| `POST` | `/access/subjects/{subject_id}/roles` | `{role_id, scope_id?}` | **204** |
+| `DELETE` | `/access/subjects/{subject_id}/roles/{role_id}` | `?scope_id=` | **204** |
 
 Input is validated (`spatie/laravel-data`, snake_case keys); every non-empty success body is wrapped
 in `{"data": …}` (`JsonResource`) with snake_case fields. Errors reuse the package's renderable
-exceptions: unknown role → **404**, duplicate role name / invalid value → **422**.
+exceptions: unknown role → **404**, duplicate role name / invalid value → **422**. Path segments are
+constrained to UUIDs, so a malformed `{role_id}` / `{subject_id}` matches no route → **404**.
 
 Omitting `scope_id` means the **global** scope — an assignment without a scope grants everywhere,
 and a revoke without a scope only removes the global assignment (a scoped one survives).

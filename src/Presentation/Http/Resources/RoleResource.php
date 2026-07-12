@@ -6,7 +6,7 @@ namespace NetCode\Access\Presentation\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use NetCode\Access\Application\ReadModels\RoleView;
+use NetCode\Access\Application\Dto\RoleView;
 
 final class RoleResource extends JsonResource
 {

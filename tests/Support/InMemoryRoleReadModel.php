@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace NetCode\Access\Tests\Support;
 
+use NetCode\Access\Application\Dto\RoleView;
 use NetCode\Access\Application\Ports\RoleReadModel;
-use NetCode\Access\Application\ReadModels\RoleView;
 use NetCode\Access\Domain\Exceptions\RoleNotFoundException;
 use NetCode\Access\Domain\ValueObjects\RoleId;
 

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace NetCode\Access\Application\ReadModels;
+namespace NetCode\Access\Application\Dto;
 
 final readonly class RoleView
 {

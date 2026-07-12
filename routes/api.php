@@ -12,8 +12,9 @@ use NetCode\Access\Presentation\Http\Controllers\SetRolePermissionsController;
 
 Route::get('roles', ListRolesController::class);
 Route::post('roles', CreateRoleController::class);
-Route::delete('roles/{roleId}', DeleteRoleController::class);
-Route::put('roles/{roleId}/permissions', SetRolePermissionsController::class);
+Route::delete('roles/{role_id}', DeleteRoleController::class)->whereUuid('role_id');
+Route::put('roles/{role_id}/permissions', SetRolePermissionsController::class)->whereUuid('role_id');
 
-Route::post('subjects/{subjectId}/roles', AssignRoleController::class);
-Route::delete('subjects/{subjectId}/roles/{roleId}', RevokeRoleController::class);
+Route::post('subjects/{subject_id}/roles', AssignRoleController::class)->whereUuid('subject_id');
+Route::delete('subjects/{subject_id}/roles/{role_id}', RevokeRoleController::class)
+    ->whereUuid(['subject_id', 'role_id']);

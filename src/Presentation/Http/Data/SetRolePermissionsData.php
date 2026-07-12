@@ -16,7 +16,7 @@ final class SetRolePermissionsData extends Data
 {
     /** @param list<string> $permissions */
     public function __construct(
-        #[FromRouteParameter('roleId')]
+        #[FromRouteParameter('role_id')]
         #[WithoutValidation]
         public string $roleId,
         public array $permissions,

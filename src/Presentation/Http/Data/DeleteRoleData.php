@@ -14,7 +14,7 @@ use Spatie\LaravelData\Mappers\SnakeCaseMapper;
 final class DeleteRoleData extends Data
 {
     public function __construct(
-        #[FromRouteParameter('roleId')]
+        #[FromRouteParameter('role_id')]
         #[WithoutValidation]
         public string $roleId,
     ) {}

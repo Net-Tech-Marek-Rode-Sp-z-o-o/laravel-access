@@ -86,17 +86,17 @@ not *what you ask for*.
 
 1. `POST /access/roles` → `CreateRole` → **201** `{data: {id}}`; a duplicate name → **422**.
 2. `GET /access/roles` → `ListRoles` → **200** `{data: [{id, name, label, permissions}]}`.
-3. `PUT /access/roles/{roleId}/permissions` → `SetRolePermissions` → **204**; the set is replaced
+3. `PUT /access/roles/{role_id}/permissions` → `SetRolePermissions` → **204**; the set is replaced
    wholesale and the flushed memo makes the very next check see the new permissions.
-4. `DELETE /access/roles/{roleId}` → `DeleteRole` → **204**; permissions and assignments cascade.
+4. `DELETE /access/roles/{role_id}` → `DeleteRole` → **204**; permissions and assignments cascade.
 
 ## Assigning a role over HTTP
 
-`POST /access/subjects/{subjectId}/roles` with `{role_id, scope_id?}`.
+`POST /access/subjects/{subject_id}/roles` with `{role_id, scope_id?}`.
 
 The commands are keyed by role *name*, the API by role *id*, so the controller first asks `GetRole`
 — which doubles as the existence check (unknown role → **404**) — and then dispatches `AssignRole`
-with the name. `DELETE /access/subjects/{subjectId}/roles/{roleId}?scope_id=` mirrors it onto
+with the name. `DELETE /access/subjects/{subject_id}/roles/{role_id}?scope_id=` mirrors it onto
 `RevokeRole`. Both answer **204**, and both are idempotent, exactly like the ports they wrap.
 
 Omitting `scope_id` means the global scope: assigning without one grants everywhere, revoking

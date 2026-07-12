@@ -6,8 +6,8 @@ namespace NetCode\Access\Infrastructure\DataAccess\ReadModels;
 
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Database\Query\Builder;
+use NetCode\Access\Application\Dto\RoleView;
 use NetCode\Access\Application\Ports\RoleReadModel;
-use NetCode\Access\Application\ReadModels\RoleView;
 use NetCode\Access\Domain\Exceptions\RoleNotFoundException;
 use NetCode\Access\Domain\ValueObjects\RoleId;
 use NetCode\Access\Infrastructure\DataAccess\Tables;

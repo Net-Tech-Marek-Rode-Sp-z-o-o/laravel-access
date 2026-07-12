@@ -15,11 +15,11 @@ use Spatie\LaravelData\Mappers\SnakeCaseMapper;
 final class AssignRoleData extends Data
 {
     public function __construct(
-        #[FromRouteParameter('subjectId')]
-        #[WithoutValidation]
-        public string $subjectId,
         #[Uuid]
         public string $roleId,
+        #[FromRouteParameter('subject_id')]
+        #[WithoutValidation]
+        public string $subjectId,
         #[Uuid]
         public string|null $scopeId = null,
     ) {}

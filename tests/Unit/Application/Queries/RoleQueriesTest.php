@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace NetCode\Access\Tests\Unit\Application\Queries;
 
+use NetCode\Access\Application\Dto\RoleView;
 use NetCode\Access\Application\Queries\GetRole\GetRole;
 use NetCode\Access\Application\Queries\GetRole\GetRoleHandler;
 use NetCode\Access\Application\Queries\ListRoles\ListRoles;
 use NetCode\Access\Application\Queries\ListRoles\ListRolesHandler;
-use NetCode\Access\Application\ReadModels\RoleView;
 use NetCode\Access\Domain\Exceptions\RoleNotFoundException;
 use NetCode\Access\Domain\ValueObjects\RoleId;
 use NetCode\Access\Tests\Support\InMemoryRoleReadModel;
