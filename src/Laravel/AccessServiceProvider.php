@@ -35,6 +35,7 @@ use NetCode\Access\Infrastructure\DataAccess\Repositories\EloquentRoleRepository
 use NetCode\Access\Infrastructure\Scope\NullScopeContext;
 use NetCode\Access\Infrastructure\Subject\NullCurrentSubject;
 use NetCode\Access\Presentation\Http\Middleware\RequirePermission;
+use NetCode\Access\Presentation\Http\Middleware\RequireScopeOwnership;
 use NetCode\Domain\Exception\InvalidArgumentException;
 use NetCode\Kit\Clock;
 use NetCode\Kit\SystemClock;
@@ -106,7 +107,11 @@ final class AccessServiceProvider extends ServiceProvider
             return ['api'];
         }
 
-        return ['api', RequirePermission::class.':'.$permission];
+        return [
+            'api',
+            RequirePermission::class.':'.$permission,
+            RequireScopeOwnership::class.':'.$permission,
+        ];
     }
 
     private function registerMiddlewareAlias(): void

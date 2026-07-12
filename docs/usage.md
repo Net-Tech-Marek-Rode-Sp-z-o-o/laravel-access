@@ -152,14 +152,33 @@ $roles->create(name: 'global-admin', label: 'Global admin', permissions: [Permis
 $assignments->assign(subjectId: $founderId, role: 'global-admin');    // global: no scope
 ```
 
-The permission is scope-aware: granted inside a scope, it only admits the admin while
-`ScopeContext::current()` returns that scope — a tenant admin cannot manage roles from another
-tenant's request. It does **not** restrict *which* role or scope the body may name, so anyone
-holding it can grant any role anywhere; treat it as a platform-admin permission.
+### Global admins vs scoped admins
 
-Set `admin_permission` to `null` to mount the routes unguarded and protect them yourself, or
-`routes` to `false` to not register them at all (publish `access-routes` to `routes/access.php` and
-wire your own).
+**How you grant the admin permission decides how much it buys**, because `RequireScopeOwnership`
+runs behind `RequirePermission` on every write:
+
+| The subject holds `admin_permission`… | Reads | Assign / revoke | Role catalogue (create, delete, permissions) |
+|---|---|---|---|
+| **globally** (`scope_id = null`) | ✅ | ✅ any subject, any scope | ✅ |
+| **inside a scope** | ✅ | ✅ only with `scope_id` = the request's current scope | ❌ **403** |
+
+A scoped admin is a *tenant* admin: it may hand roles out **inside its own tenant** and nothing
+else. It cannot grant globally (`scope_id` omitted), cannot grant into another scope, and cannot
+touch the role catalogue at all — roles are global objects with no `scope_id`, so editing or
+deleting one would reach outside the tenant. Only a **globally** granted admin permission is a
+platform admin.
+
+The catalogue is still shared: a scoped admin can *read* the role list (it needs the ids to assign
+them), so do not put tenant-confidential information in a role label.
+
+Within a tenant, the permission is unrestricted: a tenant admin may grant **any** role of the
+catalogue — including one carrying permissions it does not itself hold — to anybody, scoped to its
+tenant. If you need to stop that, wrap `RoleAssignments` in your own policy.
+
+Set `admin_permission` to `null` to mount the routes unguarded (both middlewares are skipped —
+you protect them yourself), or `routes` to `false` to not register them at all (publish
+`access-routes` to `routes/access.php` and wire your own; leave `routes` on `true` and you get both
+copies).
 
 ## Laravel Gate
 

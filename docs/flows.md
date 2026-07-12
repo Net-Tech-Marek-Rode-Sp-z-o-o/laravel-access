@@ -65,10 +65,24 @@ many roles there are. `GetRole` on an unknown id raises `RoleNotFoundException` 
 
 ## Managing roles over HTTP
 
-Every admin route runs behind `RequirePermission:{config('access.admin_permission')}` — the admin is
-just a subject holding that permission, resolved exactly like any other check (so it is scope-aware:
-an admin granted inside store A is forbidden on a request scoped to store B). No subject → **401**,
-no permission → **403**.
+Every admin route runs behind two middlewares. `RequirePermission:{config('access.admin_permission')}`
+answers *may this subject administer at all* — the admin is just a subject holding that permission,
+resolved like any other check (no subject → **401**, no permission → **403**).
+
+`RequireScopeOwnership` then answers *may it administer **here***, and only for writes:
+
+1. The subject holding the permission **globally** is a platform admin — it passes, whatever the
+   request names.
+2. Anybody else holds it only inside a scope, so the `scope_id` of the payload must equal
+   `ScopeContext::current()`; otherwise **403**. Omitting `scope_id` means the global scope, so a
+   scoped admin cannot grant globally either.
+3. The role catalogue carries no `scope_id` at all — roles are global — so a scoped admin is
+   refused there outright and can only read the list.
+
+Without this second check the middleware pair would be trivially bypassable: a store-A admin passes
+the permission check on a store-A request and could then name any other scope, or none, in the body
+— granting itself platform-wide roles. The permission check alone constrains *where you ask from*,
+not *what you ask for*.
 
 1. `POST /access/roles` → `CreateRole` → **201** `{data: {id}}`; a duplicate name → **422**.
 2. `GET /access/roles` → `ListRoles` → **200** `{data: [{id, name, label, permissions}]}`.
