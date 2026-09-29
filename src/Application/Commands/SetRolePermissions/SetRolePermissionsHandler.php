@@ -21,7 +21,7 @@ final readonly class SetRolePermissionsHandler implements CommandHandler
 
     public function __invoke(
         SetRolePermissions $command,
-    ): null {
+    ): void {
         $role = $this->roles->getById(RoleId::fromString($command->roleId));
 
         $permissions = PermissionSet::from($command->permissions);
@@ -34,7 +34,5 @@ final readonly class SetRolePermissionsHandler implements CommandHandler
         );
 
         $this->roles->save($role);
-
-        return null;
     }
 }

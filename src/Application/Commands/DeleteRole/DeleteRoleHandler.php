@@ -16,9 +16,7 @@ final readonly class DeleteRoleHandler implements CommandHandler
 
     public function __invoke(
         DeleteRole $command,
-    ): null {
+    ): void {
         $this->roles->delete($this->roles->getById(RoleId::fromString($command->roleId)));
-
-        return null;
     }
 }

@@ -22,7 +22,7 @@ final readonly class RevokeRoleHandler implements CommandHandler
 
     public function __invoke(
         RevokeRole $command,
-    ): null {
+    ): void {
         $role = $this->roles->getById(RoleId::fromString($command->roleId));
 
         $assignment = $this->assignments->find(
@@ -32,13 +32,11 @@ final readonly class RevokeRoleHandler implements CommandHandler
         );
 
         if ($assignment === null) {
-            return null;
+            return;
         }
 
         $assignment->revoke($this->clock->now());
 
         $this->assignments->remove($assignment);
-
-        return null;
     }
 }

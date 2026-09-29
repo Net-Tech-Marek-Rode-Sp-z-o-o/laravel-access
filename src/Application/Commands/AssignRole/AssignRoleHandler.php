@@ -23,13 +23,13 @@ final readonly class AssignRoleHandler implements CommandHandler
 
     public function __invoke(
         AssignRole $command,
-    ): null {
+    ): void {
         $role = $this->roles->getById(RoleId::fromString($command->roleId));
         $subjectId = new SubjectId($command->subjectId);
         $scopeId = ScopeId::fromNullable($command->scopeId);
 
         if ($this->assignments->find($role->id(), $subjectId, $scopeId) !== null) {
-            return null;
+            return;
         }
 
         $this->assignments->save(RoleAssignment::grant(
@@ -38,7 +38,5 @@ final readonly class AssignRoleHandler implements CommandHandler
             scopeId: $scopeId,
             now: $this->clock->now(),
         ));
-
-        return null;
     }
 }
